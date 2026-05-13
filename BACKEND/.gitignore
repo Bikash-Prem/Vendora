@@ -1,0 +1,8 @@
+venv/
+.idea/
+__pycache__/
+*.pyc
+voiceops.db
+# Never upload environment variables
+.env
+models/
