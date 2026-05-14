@@ -8,8 +8,10 @@ from models import Base
 
 from services.whisper_asr import transcribe_audio as transcribe_audio_whisper
 from routes.transactions import router as transaction_router
+from routes.inventory import router as inventory_router
 from services.smart_pipeline import process_transaction
 from services.ai_engine import classify_intent, normalize_product, fraud_check, predict_demand
+from services.extract import extract_data
 
 app = FastAPI()
 
@@ -27,6 +29,7 @@ Base.metadata.create_all(bind=engine)
 
 # Routes
 app.include_router(transaction_router)
+app.include_router(inventory_router)
 
 
 
@@ -42,7 +45,7 @@ async def voice_input(audio: UploadFile = File(...)):
     Accepts an audio file, transcribes it, runs NLP pipeline, and returns structured result.
     """
     transcript = transcribe_audio_whisper(audio)
-    pipeline_result = process_transaction(transcript, None)
+    pipeline_result = process_transaction(transcript, extract_data)
     intent = classify_intent(transcript)
     extracted = pipeline_result["transaction"]
     normalized_product = normalize_product(extracted["item"])

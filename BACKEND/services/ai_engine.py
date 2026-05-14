@@ -9,19 +9,47 @@ def classify_intent(text):
 
     text = text.lower()
 
-    if "becha" in text or "sold" in text:
+    if (
+        "becha" in text
+        or "bechi" in text
+        or "बेचा" in text
+        or "बेची" in text
+        or "बेचे" in text
+        or "sold" in text
+        or "sell" in text
+        or "ಮಾರಾಟ" in text  # Kannada: sale
+        or "ವಿಕ್ರಯ" in text
+        or "விற்ற" in text  # Tamil: sold
+        or "விற்ப" in text
+    ):
         return "SALES"
 
-    elif "loan" in text or "karz" in text:
+    elif (
+        "loan" in text
+        or "karz" in text
+        or "कर्ज" in text
+        or "ऋण" in text
+        or "ಕಡನ್" in text
+        or "கடன்" in text
+    ):
         return "LOAN_REQUEST"
 
-    elif "price" in text or "bhav" in text:
+    elif (
+        "price" in text
+        or "bhav" in text
+        or "भाव" in text
+        or "ಬೆಲೆ" in text
+        or "விலை" in text
+    ):
         return "PRICE_QUERY"
 
     return "UNKNOWN"
 
 
 def normalize_product(product):
+
+    if not product:
+        return None
 
     products = {
         "aloo": "potato",
@@ -34,10 +62,10 @@ def normalize_product(product):
         "mango": "mango"
     }
 
-    match = process.extractOne(
-        product,
-        products.keys()
-    )
+    match = process.extractOne(product, products.keys())
+
+    if not match:
+        return product
 
     return products[match[0]]
 

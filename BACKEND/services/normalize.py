@@ -56,6 +56,24 @@ ITEM_ALIASES = {
 
     "aam": "mango",
     "mango": "mango",
+
+    # Hindi (Devanagari)
+    "आलू": "potato",
+    "आलु": "potato",
+    "टमाटर": "tomato",
+    "प्याज": "onion",
+    "प्याज़": "onion",
+
+    # Kannada
+    "ಆಲೂಗಡ್ಡೆ": "potato",
+    "ಟೊಮ್ಯಾಟೊ": "tomato",
+    "ಟೊಮ್ಯಾಟೋ": "tomato",
+    "ಈರುಳ್ಳಿ": "onion",
+
+    # Tamil
+    "உருளைக்கிழங்கு": "potato",
+    "தக்காளி": "tomato",
+    "வெங்காயம்": "onion",
 }
 
 
@@ -109,20 +127,17 @@ def normalize_text(text):
 
     text = text.lower()
 
+    # Normalize common currency symbol to a token we can match.
+    text = text.replace("₹", " rs ")
+
     text = replace_number_words(text)
 
     text = normalize_item_names(text)
 
-    text = re.sub(
-        r"[^a-z0-9\\s]",
-        "",
-        text
-    )
+    # Keep Unicode letters/digits/underscore/space; drop punctuation.
+    # This allows native-script Hindi/Kannada/Tamil to survive normalization.
+    text = re.sub(r"[^\w\s]", " ", text, flags=re.UNICODE)
 
-    text = re.sub(
-        r"\\s+",
-        " ",
-        text
-    ).strip()
+    text = re.sub(r"\s+", " ", text).strip()
 
     return text

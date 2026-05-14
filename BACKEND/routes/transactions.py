@@ -9,8 +9,9 @@ from pydantic import BaseModel
 import re
 
 from database import SessionLocal
-from models import Transaction
+from models import Transaction, InventoryItem
 from services.smart_pipeline import process_transaction
+from services.extract import extract_data
 
 router = APIRouter()
 
@@ -70,54 +71,6 @@ class TransactionRequest(BaseModel):
     text: str
 
 
-def extract_data(text):
-
-    quantity_match = re.search(r"(\d+)\s*(kg|kilo)?", text)
-
-    price_match = re.search(r"(\d+)\s*(rs|rupees|rupaye)", text)
-
-    words = text.split()
-
-    item = None
-
-    ignore_words = [
-        "kg",
-        "kilo",
-        "rs",
-        "rupees",
-        "rupaye",
-        "sold",
-        "sell",
-        "becha",
-        "bechi",
-        "aaj",
-        "today"
-    ]
-
-    for word in words:
-
-        clean_word = word.lower()
-
-        if not clean_word.isdigit() and clean_word not in ignore_words:
-
-            item = clean_word
-
-            break
-
-    quantity = int(quantity_match.group(1)) if quantity_match else 0
-
-    price = int(price_match.group(1)) if price_match else 0
-
-    total = quantity * price
-
-    return {
-        "item": item,
-        "quantity": quantity,
-        "price": price,
-        "total": total
-    }
-
-
 @router.post("/add-transaction")
 def add_transaction(data: TransactionRequest):
 
@@ -157,6 +110,24 @@ def add_transaction(data: TransactionRequest):
     db.commit()
 
     db.refresh(new_transaction)
+
+    # Inventory: decrement stock on SALES entries.
+    try:
+        if intent == "SALES" and extracted.get("item") and extracted.get("quantity"):
+            item_key = str(extracted["item"]).strip().lower()
+
+            inv = db.query(InventoryItem).filter(InventoryItem.item == item_key).first()
+            if not inv:
+                inv = InventoryItem(item=item_key, stock=0, unit="kg")
+                db.add(inv)
+                db.commit()
+                db.refresh(inv)
+
+            inv.stock = max(0, int(inv.stock or 0) - int(extracted["quantity"]))
+            db.commit()
+    except Exception:
+        # Avoid breaking transaction logging due to inventory edge cases.
+        pass
 
     db.close()
 

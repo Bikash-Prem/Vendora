@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import api from "../services/api";
+import { createTranslator } from "../i18n/strings";
 
 interface Transaction {
   id: number;
@@ -8,6 +9,7 @@ interface Transaction {
   price: number;
   total: number;
   original_text: string;
+  timestamp?: string | null;
 }
 
 interface DashboardData {
@@ -25,13 +27,26 @@ interface DashboardData {
 }
 
 export default function Dashboard() {
-
+  const selectedLanguage = localStorage.getItem("voiceops_language") || "English";
+  const t = createTranslator(selectedLanguage);
   const [dashboardData, setDashboardData] =
     useState<DashboardData | null>(null);
 
   const [error, setError] = useState("");
 
   const [inputText, setInputText] = useState("");
+
+  function formatTimestamp(value?: string | null) {
+    if (!value) return "";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "";
+    return date.toLocaleString(undefined, {
+      day: "2-digit",
+      month: "short",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  }
 
   async function fetchDashboard() {
 
@@ -50,9 +65,23 @@ export default function Dashboard() {
   }
 
   useEffect(() => {
+    let cancelled = false;
 
-    fetchDashboard();
+    api
+      .get("/dashboard")
+      .then((response) => {
+        if (cancelled) return;
+        setDashboardData(response.data);
+      })
+      .catch((fetchError) => {
+        if (cancelled) return;
+        console.error(fetchError);
+        setError("Backend Error");
+      });
 
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   async function addTransaction() {
@@ -79,171 +108,133 @@ export default function Dashboard() {
 
   if (error) {
     return (
-      <div className="p-10 text-red-500 text-3xl">
-        {error}
+      <div className="min-h-screen bg-slate-50">
+        <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
+          <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+            <h1 className="text-2xl font-semibold text-slate-900">{t("dashboard")}</h1>
+            <p className="mt-2 text-base font-medium text-rose-600">{error}</p>
+          </div>
+        </div>
       </div>
     );
   }
 
   if (!dashboardData) {
     return (
-      <div className="p-10 text-3xl">
-        Loading Dashboard...
+      <div className="min-h-screen bg-slate-50">
+        <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
+          <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+            <p className="text-lg font-semibold text-slate-900">{t("loading")}</p>
+            <p className="mt-2 text-sm text-slate-600">Fetching your latest sales and entries.</p>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#F5F7FA] p-6">
-
-      <h1 className="text-4xl font-bold mb-8">
-        VoiceOps AI Dashboard
-      </h1>
-
-      {/* INPUT SECTION */}
-      <div className="bg-white rounded-3xl p-5 shadow-sm mb-8">
-
-        <h2 className="text-2xl font-semibold mb-4">
-          Add Transaction
-        </h2>
-
-        <div className="flex gap-3">
-
-          <input
-            type="text"
-            placeholder="Example: 25 apple 10 rs"
-            value={inputText}
-            onChange={(e) =>
-              setInputText(e.target.value)
-            }
-            className="
-              flex-1
-              p-4
-              rounded-2xl
-              border
-              border-gray-200
-              outline-none
-              text-lg
-            "
-          />
-
-          <button
-            onClick={addTransaction}
-            className="
-              bg-green-500
-              hover:bg-green-600
-              text-white
-              px-6
-              rounded-2xl
-              font-semibold
-              transition
-            "
-          >
-            Add
-          </button>
-
+    <div className="min-h-screen bg-slate-50">
+      <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
+        <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-end">
+          <div>
+            <h1 className="text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">
+              {t("dashboard")}
+            </h1>
+            <p className="mt-1 text-sm text-slate-600 sm:text-base">
+              {t("summarySubtitle")}
+            </p>
+          </div>
         </div>
 
-      </div>
+        <div className="mt-8 grid gap-6 lg:grid-cols-12">
+          <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200 lg:col-span-5">
+            <h2 className="text-lg font-semibold text-slate-900">{t("quickAdd")}</h2>
+            <p className="mt-1 text-sm text-slate-600">{t("quickAddHint")}</p>
 
-      {/* SUMMARY */}
-      <div className="grid grid-cols-2 gap-4">
+            <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+              <input
+                type="text"
+                placeholder={t("typeShortEntry")}
+                value={inputText}
+                onChange={(e) => setInputText(e.target.value)}
+                className="h-12 flex-1 rounded-2xl bg-slate-50 px-4 text-base text-slate-900 ring-1 ring-slate-200 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-600"
+              />
 
-        <div className="bg-white rounded-3xl p-6 shadow-sm">
+              <button
+                onClick={addTransaction}
+                className="inline-flex h-12 items-center justify-center rounded-2xl bg-emerald-600 px-5 text-base font-semibold text-white transition hover:bg-emerald-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600"
+              >
+                {t("add")}
+              </button>
+            </div>
+          </div>
 
-          <p className="text-gray-500">
-            Total Sales
-          </p>
-
-          <h2 className="text-4xl font-bold text-green-600 mt-3">
-            ₹{dashboardData.summary.total_sales}
-          </h2>
-
-        </div>
-
-        <div className="bg-white rounded-3xl p-6 shadow-sm">
-
-          <p className="text-gray-500">
-            Transactions
-          </p>
-
-          <h2 className="text-4xl font-bold text-blue-500 mt-3">
-            {dashboardData.summary.total_transactions}
-          </h2>
-
-        </div>
-
-      </div>
-
-      {/* TOP ITEM */}
-      <div className="bg-white rounded-3xl p-6 shadow-sm mt-6">
-
-        <p className="text-gray-500">
-          Top Selling Item
-        </p>
-
-        <h2 className="text-3xl font-bold mt-3 capitalize">
-          {dashboardData.top_item.name}
-        </h2>
-
-        <p className="text-lg text-gray-600 mt-2">
-          Quantity Sold:
-          {" "}
-          {dashboardData.top_item.total_quantity}
-        </p>
-
-      </div>
-
-      {/* TRANSACTIONS */}
-      <div className="mt-8">
-
-        <h2 className="text-2xl font-semibold mb-4">
-          Recent Transactions
-        </h2>
-
-        <div className="space-y-4">
-
-          {dashboardData.transactions.map((transaction) => (
-
-            <div
-              key={transaction.id}
-              className="bg-white rounded-2xl p-5 shadow-sm"
-            >
-
-              <div className="flex justify-between">
-
-                <h3 className="text-2xl font-semibold capitalize">
-                  {transaction.item}
-                </h3>
-
-                <h3 className="text-2xl font-bold text-green-600">
-                  ₹{transaction.total}
-                </h3>
-
-              </div>
-
-              <p className="text-gray-500 mt-2">
-                Qty:
-                {" "}
-                {transaction.quantity}
-                {" "}
-                • Price:
-                {" "}
-                ₹{transaction.price}
+          <div className="grid gap-4 sm:grid-cols-2 lg:col-span-7">
+            <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+              <p className="text-sm font-medium text-slate-600">{t("totalSales")}</p>
+              <p className="mt-3 text-3xl font-semibold text-emerald-700 sm:text-4xl">
+                ₹{dashboardData.summary.total_sales}
               </p>
-
-              <p className="text-gray-400 mt-2 text-sm">
-                {transaction.original_text}
-              </p>
-
+              <p className="mt-1 text-sm text-slate-500">All-time (from saved entries)</p>
             </div>
 
-          ))}
+            <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+              <p className="text-sm font-medium text-slate-600">{t("transactions")}</p>
+              <p className="mt-3 text-3xl font-semibold text-sky-700 sm:text-4xl">
+                {dashboardData.summary.total_transactions}
+              </p>
+              <p className="mt-1 text-sm text-slate-500">Count of entries</p>
+            </div>
 
+            <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200 sm:col-span-2">
+              <p className="text-sm font-medium text-slate-600">{t("topSellingItem")}</p>
+              <div className="mt-3 flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between">
+                <p className="text-2xl font-semibold capitalize text-slate-900">
+                  {dashboardData.top_item.name ?? "—"}
+                </p>
+                <p className="text-sm text-slate-600">
+                  {t("qtySold")}: <span className="font-semibold text-slate-900">{dashboardData.top_item.total_quantity}</span>
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
 
-      </div>
+        <div className="mt-10">
+          <div className="flex items-end justify-between gap-4">
+            <div>
+              <h2 className="text-xl font-semibold text-slate-900">{t("recentTransactions")}</h2>
+              <p className="mt-1 text-sm text-slate-600">{t("latestEntriesHint")}</p>
+            </div>
+          </div>
 
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            {dashboardData.transactions.map((transaction) => (
+              <div key={transaction.id} className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-lg font-semibold capitalize text-slate-900">{transaction.item}</p>
+                    <p className="mt-1 text-sm text-slate-600">
+                      Qty <span className="font-semibold text-slate-900">{transaction.quantity}</span> • Price ₹{transaction.price}
+                    </p>
+                  </div>
+
+                  <div className="text-right">
+                    <p className="text-xl font-semibold text-emerald-700">₹{transaction.total}</p>
+                    <p className="mt-1 text-xs text-slate-500">{formatTimestamp(transaction.timestamp)}</p>
+                  </div>
+                </div>
+
+                <div className="mt-4 rounded-2xl bg-slate-50 p-3 ring-1 ring-slate-200">
+                  <p className="text-sm text-slate-600" style={{ wordBreak: "break-word" }}>
+                    {transaction.original_text}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
