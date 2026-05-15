@@ -8,15 +8,13 @@ BASE_DIR = os.path.dirname(
     os.path.dirname(__file__)
 )
 
-MODEL_PATH = os.path.join(
-    BASE_DIR,
-    "models",
-    "base.pt"
-)
+# MODEL_PATH = os.path.join(
+#     BASE_DIR,
+#     "models",
+#     "base.pt"
+# )
 
-model = whisper.load_model(
-    MODEL_PATH
-)
+model = whisper.load_model("base")
 
 
 def transcribe_audio(audio_path):
