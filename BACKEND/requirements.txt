@@ -4,3 +4,5 @@ SQLAlchemy
 pydantic
 python-dotenv
 rapidfuzz
+openai-whisper
+python-multipart
