@@ -14,7 +14,7 @@ BASE_DIR = os.path.dirname(
 #     "base.pt"
 # )
 
-model = whisper.load_model("base")
+model = whisper.load_model("tiny")
 
 
 def transcribe_audio(audio_path):
