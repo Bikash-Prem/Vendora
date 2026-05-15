@@ -51,7 +51,7 @@ export default function Home() {
     normalized_text?: string;
     intent?: string;
     fraud_check?: string;
-    predicted_demand?: string;
+    predicted_demand?: number;
   } | null>(null);
   const finalTranscriptRef = useRef("");
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);

@@ -19,7 +19,7 @@ interface DashboardData {
   };
 
   top_item: {
-    name: string;
+    name: string | null;
     total_quantity: number;
   };
 

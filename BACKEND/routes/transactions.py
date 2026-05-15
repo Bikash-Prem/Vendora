@@ -67,6 +67,11 @@ def get_dashboard_data():
     }
 
 
+@router.get("/dashboard")
+def dashboard():
+    return get_dashboard_data()
+
+
 class TransactionRequest(BaseModel):
     text: str
 
